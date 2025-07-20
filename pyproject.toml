@@ -1,7 +1,6 @@
 [project]
-name = "schwab-client"
-version = "0.1.0"
-description = ""
+name = "schwab-client-py"
+description = "Unoffical Schwab client to interface with the Charles Scwhab API."
 authors = [
     {name = "Alejandro Pinero",email = "drosdotio@gmail.com"}
 ]
@@ -13,6 +12,7 @@ dependencies = [
 ]
 
 [tool.poetry]
+version = "0.0.1"
 packages = [{include = "schwab_client", from = "src"}]
 
 [tool.poetry.group.dev]
