@@ -1,27 +1,30 @@
 """Module providing a Schwab API client."""
+from typing import Any, Dict
 
 from schwabpy_api.auth import SchwabAuth
-from schwabpy_api.quotes.endpoint import Quotes
-from schwabpy_api.options.endpoint import Options
+from schwabpy_api.quotes.quotes import Quotes
+from schwabpy_api.options.options import Options
+from schwabpy_api.market_hours import MarketHours
 
-
-class MarketHours:
-    """Schwab API endpoint to obtain market hours."""
-
-    pass
 
 
 class SchwabClient:
     """Schwab Client."""
 
-    def __init__(self,):
+    def __init__(
+        self,
+        client_id: str,
+        client_secret: str,
+        token: Dict[str, Any],
+        refresh_url: str,
+    ):
         """Initialize Schwab client.
-        
+
         This package provides a Python client for the Schwab API, including
         modules for authentication, quotes, options, and more.
         """
         # Define enndpoints
-        self.auth = SchwabAuth()
+        self.auth = SchwabAuth(client_id, client_secret, token, refresh_url)
         self.quotes = Quotes()
         self.options = Options()
         self.market_hours = MarketHours()
