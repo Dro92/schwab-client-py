@@ -1,4 +1,5 @@
 """Module providing basic access token refresh logic for Schwab API client."""
+
 import time
 from enum import Enum
 
@@ -26,6 +27,7 @@ from typing import Any, Dict
 #
 # Upon expiration, a new set refresh token must be recreated using the authorization_code Grant Type authentication flow (CAG/LMS).
 
+
 class Token(str, Enum):
     """Token enumeration."""
 
@@ -35,14 +37,14 @@ class Token(str, Enum):
     ACCESS_TOKEN = "access_token"
 
 
-
 class SchwabAuth:
     """Schwab OAuth2 access token refresher.
-    
+
     This class only refreshes access tokens utilizing a valid refresh token.
     """
-    
-    def __init__(self,
+
+    def __init__(
+        self,
         client_id: str,
         client_secret: str,
         token: Dict[str, Any],
@@ -50,30 +52,30 @@ class SchwabAuth:
     ):
         """Initialize Schwab authentication manager."""
         self._client = AsyncOAuth2Client(
-            client_id = client_id,
-            client_secret = client_secret,
-            token=token
+            client_id=client_id, client_secret=client_secret, token=token
         )
         self.client_id = client_id
         self.client_secret = client_secret
         self.token = token
-        self.refresh_url = refresh_url  
+        self.refresh_url = refresh_url
 
     @property
-    def is_token_expired(self,) -> bool:
+    def is_token_expired(
+        self,
+    ) -> bool:
         """Check if token has expired.
-        
+
         Returns:
             bool
 
         """
         expires_at = self.token.get(Token.EXPIRES_AT)
         return not expires_at or time.time() >= expires_at
-    
+
     @property
     def is_token_expiring_soon(self, buffer: int = 180) -> bool:
         """Check if token expires soon.
-        
+
         Args:
             buffer (int): Seconds left before access token expires.
 
@@ -83,10 +85,10 @@ class SchwabAuth:
         """
         expires_at = self.token.get(Token.EXPIRES_AT)
         return not expires_at or time.time() >= (expires_at - buffer)
-    
+
     async def get_valid_token(self) -> str:
         """Get a valid token from Schwab.
-        
+
         Returns:
             str: Access Token
 
