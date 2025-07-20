@@ -1,9 +1,11 @@
 """Module providing basic access token refresh logic for Schwab API client."""
 
+import asyncio
 import time
 from enum import Enum
 
 from authlib.integrations.httpx_client import AsyncOAuth2Client
+
 
 from typing import Any, Dict
 
@@ -52,54 +54,49 @@ class SchwabAuth:
     ):
         """Initialize Schwab authentication manager."""
         self._client = AsyncOAuth2Client(
-            client_id=client_id, client_secret=client_secret, token=token
+            client_id=client_id,
+            client_secret=client_secret,
+            token=token
         )
         self.client_id = client_id
         self.client_secret = client_secret
         self.token = token
         self.refresh_url = refresh_url
+        self._refresh_lock = asyncio.Lock()  # Coroutine lock safety
 
     @property
-    def is_token_expired(
-        self,
-    ) -> bool:
+    def is_token_expired(self, buffer: int = 0) -> bool:
         """Check if token has expired.
-
-        Returns:
-            bool
-
-        """
-        expires_at = self.token.get(Token.EXPIRES_AT)
-        return not expires_at or time.time() >= expires_at
-
-    @property
-    def is_token_expiring_soon(self, buffer: int = 180) -> bool:
-        """Check if token expires soon.
-
+        
         Args:
             buffer (int): Seconds left before access token expires.
-
+        
         Returns:
             bool
 
         """
+        if not self.token:
+            return False
+    
         expires_at = self.token.get(Token.EXPIRES_AT)
         return not expires_at or time.time() >= (expires_at - buffer)
 
-    async def get_valid_token(self) -> str:
+    async def get_token(self, buffer: int = 60) -> dict:
         """Get a valid token from Schwab.
 
         Returns:
-            str: Access Token
+            dict: OAuth2Token dictionary
 
         """
-        await self.ensure_token_valid()
-        return self._client.token[Token.ACCESS_TOKEN]
-
-    async def ensure_token_valid(self) -> None:
-        """Check if current token is valid and refresh."""
-        if self._token_is_expired():
-            await self._client.refresh_token(self.refresh_url)
+        if not self.is_token_expired():
+            # Use lock for single cororutine access
+            async with self._refresh_lock:
+                # Update latest token
+                self.token = await self._client.refresh_token(
+                    self.refresh_url,
+                    self.token.get(Token.REFRESH_TOKEN)
+                )
+        return self.token
 
     # TODO: Need to have a check for the refresh token to notify user
     # Must include a timestamp or some sort of check for the refresh token.

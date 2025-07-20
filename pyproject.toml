@@ -1,5 +1,5 @@
 [project]
-name = "schwabpy-api"
+name = "schwab-client"
 version = "0.1.0"
 description = ""
 authors = [
@@ -31,7 +31,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:tool.poetry.version"]
-version_variable = ["schwabpy_api/version.py:__version__"]
+version_variable = ["schwab_client/version.py:__version__"]
 build_command = "poetry_build"
 commit_message = "chore(release): {version}"
 commit_parser = "angular"
