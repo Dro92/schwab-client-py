@@ -1,0 +1,42 @@
+[project]
+name = "schwabpy-api"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Alejandro Pinero",email = "drosdotio@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "authlib (>=1.6.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
+
+[tool.poetry]
+packages = [{include = "schwabpy_api", from = "src"}]
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.17.0"
+ruff = "^0.12.4"
+pytest = "^8.4.1"
+pytest-cov = "^6.2.1"
+python-semantic-release = "^10.2.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:tool.poetry.version"]
+version_variable = ["schwabpy_api/version.py:__version__"]
+build_command = "poetry_build"
+commit_message = "chore(release): {version}"
+commit_parser = "angular"
+tag_format =  "{version}"
+branches = ["main"]
+
+[tool.semantic_release.changelog]
+changelog_file = "docs/CHANGELOG.md"
