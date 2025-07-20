@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "schwabpy_api", from = "src"}]
+packages = [{include = "schwab-client", from = "src"}]
 
 [tool.poetry.group.dev]
 optional = true
