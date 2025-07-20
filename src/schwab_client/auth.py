@@ -54,9 +54,7 @@ class SchwabAuth:
     ):
         """Initialize Schwab authentication manager."""
         self._client = AsyncOAuth2Client(
-            client_id=client_id,
-            client_secret=client_secret,
-            token=token
+            client_id=client_id, client_secret=client_secret, token=token
         )
         self.client_id = client_id
         self.client_secret = client_secret
@@ -67,17 +65,17 @@ class SchwabAuth:
     @property
     def is_token_expired(self, buffer: int = 0) -> bool:
         """Check if token has expired.
-        
+
         Args:
             buffer (int): Seconds left before access token expires.
-        
+
         Returns:
             bool
 
         """
         if not self.token:
             return False
-    
+
         expires_at = self.token.get(Token.EXPIRES_AT)
         return not expires_at or time.time() >= (expires_at - buffer)
 
@@ -93,8 +91,7 @@ class SchwabAuth:
             async with self._refresh_lock:
                 # Update latest token
                 self.token = await self._client.refresh_token(
-                    self.refresh_url,
-                    self.token.get(Token.REFRESH_TOKEN)
+                    self.refresh_url, self.token.get(Token.REFRESH_TOKEN)
                 )
         return self.token
 
