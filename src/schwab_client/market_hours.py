@@ -39,7 +39,6 @@ class MarketHours:
         """Market hours init method."""
         self.client = client
 
-    # Currently the Schwab API only supports the "equity" market_id endpoint
     async def get_market_status(
         self,
         market_id: str = Markets.MarketType.EQUITY,
@@ -58,8 +57,14 @@ class MarketHours:
         params = {}
         if date is not None:
             params["data"] = date
-        # Check market id
+        # Check provided market id is valid
         market_id = check_enum_value(market_id, Markets.MarketType)
+
+        # TODO: Currently the Schwab API only supports the "equity" market_id endpoint.
+        #       Remove this in the future if it is corrected in the Schwab API.
+        if market_id != Markets.MarketType.EQUITY:
+            market_id = Markets.MarketType.EQUITY
+
         endpoint = "/markets/{}".format(market_id)
         path = MARKET_DATA_PATH + endpoint
         return await self.client._get(path, params)
