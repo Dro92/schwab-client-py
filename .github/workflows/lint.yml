@@ -1,5 +1,4 @@
-name: Poetry CI Workflow
-
+name: Lint Workflow
 on:
   push:
     branches-ignore:
@@ -8,7 +7,7 @@ on:
       - '**'  # Do not run on tag pipelines
 
 jobs:
-  code-lints:
+  lints:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -39,3 +38,23 @@ jobs:
 
       - name: Lint Mypy
         run: poetry run mypy --config-file pyproject.toml .
+
+  semantic-release-dry-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Dry Run Semantic Release
+        uses: python-semantic-release/python-semantic-release@v10.2.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          args: publish --noop  # Dry run, no pushing
