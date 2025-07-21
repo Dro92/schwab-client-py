@@ -1,6 +1,6 @@
 """Module providing a Schwab API client."""
 
-import httpx
+from httpx import Response
 from authlib.integrations.base_client.errors import InvalidTokenError, TokenExpiredError  # type: ignore
 from typing import Any, Callable, Dict, Optional
 
@@ -42,7 +42,7 @@ class SchwabClient(ClientProtocol):
         path: str,
         *,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Response:
         """Polymorphic request class for HTTP methods."""
         url = settings.SCHWAB_API_BASE_URL + path
         # TODO: Add some logging to debug? Need to protect sensitive data
@@ -55,7 +55,7 @@ class SchwabClient(ClientProtocol):
         request_method = getattr(self.auth._client.session, method.lower())
 
         try:
-            resp: httpx.Response = await request_method(url, params=params)
+            resp: Response = await request_method(url, params=params)
             resp.raise_for_status()
             return resp.json()
         except (InvalidTokenError, TokenExpiredError):

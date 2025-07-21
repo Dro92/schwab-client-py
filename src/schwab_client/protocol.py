@@ -1,6 +1,7 @@
 """Module for implementing HTTP protocol methods."""
 
 from typing import Protocol, Any, Optional, Dict
+from httpx import Response
 
 
 class ClientProtocol(Protocol):
@@ -12,14 +13,14 @@ class ClientProtocol(Protocol):
         path: str,
         *,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Response:
         """Polymorphic request class for HTTP methods."""
 
     async def _get(
         self,
         path: str,
         params: Optional[Dict[str, Any]],
-    ) -> dict[str, Any]:
+    ) -> Response:
         """Send GET request to endpoint."""
         return await self._request("GET", path, params=params)
 
@@ -27,17 +28,15 @@ class ClientProtocol(Protocol):
         self,
         path: str,
         params: Optional[Dict[str, Any]],
-    ) -> dict[str, Any]:
+    ) -> Response:
         """Send POST request to endpoint."""
         return await self._request("POST", path, params=params)
 
-    async def _put(self, path: str, params: Optional[Dict[str, Any]]) -> dict[str, Any]:
+    async def _put(self, path: str, params: Optional[Dict[str, Any]]) -> Response:
         """Send PUT request to endpoint."""
         return await self._request("PUT", path, params=params)
 
-    async def _delete(
-        self, path: str, params: Optional[Dict[str, Any]]
-    ) -> dict[str, Any]:
+    async def _delete(self, path: str, params: Optional[Dict[str, Any]]) -> Response:
         """Send DELETE request to endpoint."""
         return await self._request("DELETE", path, params=params)
 
