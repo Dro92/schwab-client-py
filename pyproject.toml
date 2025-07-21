@@ -23,7 +23,6 @@ mypy = "^1.17.0"
 ruff = "^0.12.4"
 pytest = "^8.4.1"
 pytest-cov = "^6.2.1"
-python-semantic-release = "^10.2.0"
 black = "^25.1.0"
 
 [build-system]
@@ -37,6 +36,7 @@ build_command = "poetry_build"
 commit_message = "chore(release): {version}"
 commit_parser = "conventional"
 tag_format =  "{version}"
+branch = "main"
 
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"
