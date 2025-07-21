@@ -86,7 +86,7 @@ class SchwabAuth:
             dict: OAuth2Token dictionary
 
         """
-        if not self.is_token_expired():
+        if not self.is_token_expired:
             # Use lock for single cororutine access
             async with self._refresh_lock:
                 # Update latest token

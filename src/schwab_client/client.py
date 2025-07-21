@@ -34,16 +34,16 @@ class SchwabClient(ClientProtocol):
         self.market_hours = MarketHours()
         return
 
-    def is_market_open(
-        self,
-    ) -> bool:
-        """Check market status.
+    # def is_market_open(
+    #     self,
+    # ) -> bool:
+    #     """Check market status.
 
-        Returns:
-            bool: Market status
+    #     Returns:
+    #         bool: Market status
 
-        """
-        return
+    #     """
+    #     return
 
     # TODO: Implementing HTTP request methods, but this seems very reapetitive?.
     # Use a wrapper/polymorphic request to handle the logic?
@@ -53,17 +53,17 @@ class SchwabClient(ClientProtocol):
         # TODO: Add some logging to debug? Need to protect sensitive data
 
         # Check token and refresh if expired
-        if self.auth.is_token_expired():
-            self.auth.get_token()
+        if self.auth.is_token_expired:
+            await self.auth.get_token()
 
         try:
             resp: httpx.Response = await self.auth._client.session.get(
                 url=url, params=data
             )
             resp.raise_for_status()
-            return resp.json()
         except (InvalidTokenError, TokenExpiredError):
             await self.auth.get_token()
+        return resp.json()
 
     async def _post(self, path: str, data: dict) -> dict[str, Any]:
         """Send POST request to endpoint."""
@@ -71,8 +71,8 @@ class SchwabClient(ClientProtocol):
         # TODO: Add some logging to debug? Need to protect sensitive data
 
         # Check token and refresh if expired
-        if self.auth.is_token_expired():
-            self.auth.get_token()
+        if self.auth.is_token_expired:
+            await self.auth.get_token()
 
         try:
             resp: httpx.Response = await self.auth._client.session.post(
@@ -82,6 +82,7 @@ class SchwabClient(ClientProtocol):
             return resp.json()
         except (InvalidTokenError, TokenExpiredError):
             await self.auth.get_token()
+        return resp.json()
 
     async def _put(self, path: str, data: dict) -> dict[str, Any]:
         """Send PUT request to endpoint."""
@@ -89,8 +90,8 @@ class SchwabClient(ClientProtocol):
         # TODO: Add some logging to debug? Need to protect sensitive data
 
         # Check token and refresh if expired
-        if self.auth.is_token_expired():
-            self.auth.get_token()
+        if self.auth.is_token_expired:
+            await self.auth.get_token()
 
         try:
             resp: httpx.Response = await self.auth._client.session.put(
@@ -100,6 +101,7 @@ class SchwabClient(ClientProtocol):
             return resp.json()
         except (InvalidTokenError, TokenExpiredError):
             await self.auth.get_token()
+        return resp.json()
 
     async def _delete(self, path: str, data: dict) -> dict[str, Any]:
         """Send DELETE request to endpoint."""
@@ -107,8 +109,8 @@ class SchwabClient(ClientProtocol):
         # TODO: Add some logging to debug? Need to protect sensitive data
 
         # Check token and refresh if expired
-        if self.auth.is_token_expired():
-            self.auth.get_token()
+        if self.auth.is_token_expired:
+            await self.auth.get_token()
 
         try:
             resp: httpx.Response = await self.auth._client.session.delete(
@@ -118,3 +120,4 @@ class SchwabClient(ClientProtocol):
             return resp.json()
         except (InvalidTokenError, TokenExpiredError):
             await self.auth.get_token()
+        return resp.json()
