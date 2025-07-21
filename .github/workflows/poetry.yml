@@ -1,0 +1,36 @@
+name: Poetry CI Workflow
+
+on: [push]  #pull_request
+
+jobs:
+  code-lints:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.1.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          virtualenvs-path: .venv
+
+      - name: Install project
+        run: poetry install --with dev --no-interaction --no-root
+
+      - name: Lint Ruff Format
+        run: poetry run ruff format --check .
+
+      - name: Lint Ruff Check
+        run: poetry run ruff check .
+
+      - name: Lint Mypy
+        run: poetry run mypy --config-file pyproject.toml .
