@@ -1,0 +1,21 @@
+name: Release - Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  semantic-release:
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+      steps:
+        - name: Check out repository
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0  # Fetch history so semantic-release can find prior tag
+        - name: Semantic Release
+          uses: python-semantic-release/python-semantic-release@v10.2.0
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
