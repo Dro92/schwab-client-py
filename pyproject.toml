@@ -35,9 +35,8 @@ version_toml = ["pyproject.toml:tool.poetry.version"]
 version_variable = ["schwab_client/version.py:__version__"]
 build_command = "poetry_build"
 commit_message = "chore(release): {version}"
-commit_parser = "angular"
+commit_parser = "conventional"
 tag_format =  "{version}"
-branches = ["main"]
 
 [tool.semantic_release.changelog]
-changelog_file = "docs/CHANGELOG.md"
+changelog_file = "CHANGELOG.md"
