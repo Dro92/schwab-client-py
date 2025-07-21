@@ -18,7 +18,7 @@ jobs:
         uses: python-semantic-release/python-semantic-release@v10.2.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          args: version --noop --print  # Dry run only, no publishing
+          args: version --noop --print --branches "*"  # Dry run only, no publishing
 
   lints:
     runs-on: ubuntu-latest
