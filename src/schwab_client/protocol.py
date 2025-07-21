@@ -1,9 +1,8 @@
 """Module for implementing HTTP protocol methods."""
 
-from typing import Protocol, Any, Optional, Dict, runtime_checkable
+from typing import Protocol, Any, Optional, Dict
 
 
-@runtime_checkable
 class ClientProtocol(Protocol):
     """Module implementing custom HTTP protocol methods."""
 
@@ -22,6 +21,7 @@ class ClientProtocol(Protocol):
         params: Optional[Dict[str, Any]],
     ) -> dict[str, Any]:
         """Send GET request to endpoint."""
+        return await self._request("GET", path, params=params)
 
     async def _post(
         self,
@@ -29,14 +29,17 @@ class ClientProtocol(Protocol):
         params: Optional[Dict[str, Any]],
     ) -> dict[str, Any]:
         """Send POST request to endpoint."""
+        return await self._request("POST", path, params=params)
 
     async def _put(self, path: str, params: Optional[Dict[str, Any]]) -> dict[str, Any]:
         """Send PUT request to endpoint."""
+        return await self._request("PUT", path, params=params)
 
     async def _delete(
         self, path: str, params: Optional[Dict[str, Any]]
     ) -> dict[str, Any]:
         """Send DELETE request to endpoint."""
+        return await self._request("DELETE", path, params=params)
 
 
 # TODO: Consider adding a runtime class with abstract methods?

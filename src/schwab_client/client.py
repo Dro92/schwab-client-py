@@ -30,9 +30,9 @@ class SchwabClient(ClientProtocol):
         """
         # Define enndpoints
         self.auth = SchwabAuth(client_id, client_secret, token, refresh_url)
-        self.quotes = Quotes()
-        self.options = Options()
-        self.market_hours = MarketHours()
+        self.quotes = Quotes(self)
+        self.options = Options(self)
+        self.market_hours = MarketHours(self)
         self.token_updater = token_updater
         return
 
@@ -67,29 +67,3 @@ class SchwabClient(ClientProtocol):
             resp = await request_method(url, params=params)
             resp.raise_for_status()
             return resp.json()
-
-    async def _get(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Send GET request to endpoint."""
-        return await self._request("GET", path, params=params)
-
-    async def _post(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Send POST request to endpoint."""
-        return await self._request("POST", path, params=params)
-
-    async def _put(self, path: str, params: Optional[Dict[str, Any]]) -> dict[str, Any]:
-        """Send PUT request to endpoint."""
-        return await self._request("PUT", path, params=params)
-
-    async def _delete(
-        self, path: str, params: Optional[Dict[str, Any]]
-    ) -> dict[str, Any]:
-        """Send DELETE request to endpoint."""
-        return await self._request("DELETE", path, params=params)
