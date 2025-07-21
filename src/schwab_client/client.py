@@ -1,7 +1,7 @@
 """Module providing a Schwab API client."""
 
 import httpx
-from authlib.integrations.base_client.errors import InvalidTokenError, TokenExpiredError
+from authlib.integrations.base_client.errors import InvalidTokenError, TokenExpiredError  # type: ignore
 from typing import Any, Dict
 
 from schwab_client.config import settings
@@ -33,17 +33,6 @@ class SchwabClient(ClientProtocol):
         self.options = Options()
         self.market_hours = MarketHours()
         return
-
-    # def is_market_open(
-    #     self,
-    # ) -> bool:
-    #     """Check market status.
-
-    #     Returns:
-    #         bool: Market status
-
-    #     """
-    #     return
 
     # TODO: Implementing HTTP request methods, but this seems very reapetitive?.
     # Use a wrapper/polymorphic request to handle the logic?

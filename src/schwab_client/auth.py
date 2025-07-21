@@ -4,7 +4,7 @@ import asyncio
 import time
 from enum import Enum
 
-from authlib.integrations.httpx_client import AsyncOAuth2Client
+from authlib.integrations.httpx_client import AsyncOAuth2Client  # type: ignore
 
 
 from typing import Any, Dict
