@@ -36,7 +36,10 @@ build_command = "poetry_build"
 commit_message = "chore(release): {version}"
 commit_parser = "conventional"
 tag_format =  "{version}"
-branch = "main"
 
-[tool.semantic_release.changelog]
+[tool.semantic_release.branches]
+main = { match = "main", prelease = false}
+other = { match = ".*", prelease = true}
+
+[tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
