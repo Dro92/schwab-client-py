@@ -1,6 +1,11 @@
 name: Poetry CI Workflow
 
-on: [push]  #pull_request
+on:
+  push:
+    branches-ignore:
+      - main  # Do not run on merge to main, that was done prior during PR
+    tags-ignore:
+      - '**'  # Do not run on tag pipelines
 
 jobs:
   code-lints:
