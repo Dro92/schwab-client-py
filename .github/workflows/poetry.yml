@@ -3,7 +3,7 @@ name: Poetry CI Workflow
 on: [push]  #pull_request
 
 jobs:
-  setup-poetry:
+  code-lints:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
