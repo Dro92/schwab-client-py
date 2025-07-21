@@ -2,7 +2,7 @@
 
 import httpx
 from authlib.integrations.base_client.errors import InvalidTokenError, TokenExpiredError  # type: ignore
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Optional
 
 from schwab_client.config import settings
 from schwab_client.protocol import ClientProtocol
@@ -19,8 +19,9 @@ class SchwabClient(ClientProtocol):
         self,
         client_id: str,
         client_secret: str,
-        token: Dict[str, Any],
         refresh_url: str,
+        token: Dict[str, Any],
+        token_updater: Callable,  # TODO: User definable?
     ):
         """Initialize Schwab client.
 
@@ -32,81 +33,63 @@ class SchwabClient(ClientProtocol):
         self.quotes = Quotes()
         self.options = Options()
         self.market_hours = MarketHours()
+        self.token_updater = token_updater
         return
 
-    # TODO: Implementing HTTP request methods, but this seems very reapetitive?.
-    # Use a wrapper/polymorphic request to handle the logic?
-    async def _get(self, path: str, data: dict) -> dict[str, Any]:
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Polymorphic request class for HTTP methods."""
+        url = settings.SCHWAB_API_BASE_URL + path
+        # TODO: Add some logging to debug? Need to protect sensitive data
+
+        # Check token and refresh if necessary
+        self.token = await self.auth.get_token()
+        # TODO: User callable to update token?
+
+        # Setup request method with session authentication
+        request_method = getattr(self.auth._client.session, method.lower())
+
+        try:
+            resp: httpx.Response = await request_method(url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+        except (InvalidTokenError, TokenExpiredError):
+            # Bad token, refresh it
+            self.token = await self.auth.get_token()
+            # TODO: User callable to update token?
+
+            # Retry request with updated token
+            resp = await request_method(url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+
+    async def _get(
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]],
+    ) -> dict[str, Any]:
         """Send GET request to endpoint."""
-        url = settings.SCHWAB_API_BASE_URL + path
-        # TODO: Add some logging to debug? Need to protect sensitive data
+        return await self._request("GET", path, params=params)
 
-        # Check token and refresh if expired
-        if self.auth.is_token_expired:
-            await self.auth.get_token()
-
-        try:
-            resp: httpx.Response = await self.auth._client.session.get(
-                url=url, params=data
-            )
-            resp.raise_for_status()
-        except (InvalidTokenError, TokenExpiredError):
-            await self.auth.get_token()
-        return resp.json()
-
-    async def _post(self, path: str, data: dict) -> dict[str, Any]:
+    async def _post(
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]],
+    ) -> dict[str, Any]:
         """Send POST request to endpoint."""
-        url = settings.SCHWAB_API_BASE_URL + path
-        # TODO: Add some logging to debug? Need to protect sensitive data
+        return await self._request("POST", path, params=params)
 
-        # Check token and refresh if expired
-        if self.auth.is_token_expired:
-            await self.auth.get_token()
-
-        try:
-            resp: httpx.Response = await self.auth._client.session.post(
-                url=url, params=data
-            )
-            resp.raise_for_status()
-            return resp.json()
-        except (InvalidTokenError, TokenExpiredError):
-            await self.auth.get_token()
-        return resp.json()
-
-    async def _put(self, path: str, data: dict) -> dict[str, Any]:
+    async def _put(self, path: str, params: Optional[Dict[str, Any]]) -> dict[str, Any]:
         """Send PUT request to endpoint."""
-        url = settings.SCHWAB_API_BASE_URL + path
-        # TODO: Add some logging to debug? Need to protect sensitive data
+        return await self._request("PUT", path, params=params)
 
-        # Check token and refresh if expired
-        if self.auth.is_token_expired:
-            await self.auth.get_token()
-
-        try:
-            resp: httpx.Response = await self.auth._client.session.put(
-                url=url, params=data
-            )
-            resp.raise_for_status()
-            return resp.json()
-        except (InvalidTokenError, TokenExpiredError):
-            await self.auth.get_token()
-        return resp.json()
-
-    async def _delete(self, path: str, data: dict) -> dict[str, Any]:
+    async def _delete(
+        self, path: str, params: Optional[Dict[str, Any]]
+    ) -> dict[str, Any]:
         """Send DELETE request to endpoint."""
-        url = settings.SCHWAB_API_BASE_URL + path
-        # TODO: Add some logging to debug? Need to protect sensitive data
-
-        # Check token and refresh if expired
-        if self.auth.is_token_expired:
-            await self.auth.get_token()
-
-        try:
-            resp: httpx.Response = await self.auth._client.session.delete(
-                url=url, params=data
-            )
-            resp.raise_for_status()
-            return resp.json()
-        except (InvalidTokenError, TokenExpiredError):
-            await self.auth.get_token()
-        return resp.json()
+        return await self._request("DELETE", path, params=params)

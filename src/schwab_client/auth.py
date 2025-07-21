@@ -62,7 +62,6 @@ class SchwabAuth:
         self.refresh_url = refresh_url
         self._refresh_lock = asyncio.Lock()  # Coroutine lock safety
 
-    @property
     def is_token_expired(self, buffer: int = 0) -> bool:
         """Check if token has expired.
 
@@ -74,7 +73,7 @@ class SchwabAuth:
 
         """
         if not self.token:
-            return False
+            return True
 
         expires_at = self.token.get(Token.EXPIRES_AT)
         return not expires_at or time.time() >= (expires_at - buffer)
@@ -86,7 +85,7 @@ class SchwabAuth:
             dict: OAuth2Token dictionary
 
         """
-        if not self.is_token_expired:
+        if self.is_token_expired(buffer):
             # Use lock for single cororutine access
             async with self._refresh_lock:
                 # Update latest token
