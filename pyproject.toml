@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-version = "0.1.0"
+version = "0.0.0"
 packages = [{include = "schwab_client", from = "src"}]
 
 [tool.poetry.group.dev]
