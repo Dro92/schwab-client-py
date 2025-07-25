@@ -1,0 +1,60 @@
+[project]
+name = "schwab-client-py"
+description = "Unoffical Schwab client to interface with the Charles Scwhab API."
+authors = [
+    {name = "Alejandro Pinero",email = "drosdotio@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "authlib (>=1.6.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
+
+[tool.poetry]
+version = "0.1.0"
+packages = [{include = "schwab_client", from = "src"}]
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.17.0"
+ruff = "^0.12.4"
+pytest = "^8.4.1"
+pytest-cov = "^6.2.1"
+black = "^25.1.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:tool.poetry.version"]
+build_command = "poetry build"
+commit_message = "chore(release): {version}"
+commit_parser = "conventional"
+tag_format =  "{version}"
+version_source = "tag"
+allow_zero_version = true
+
+[tool.semantic_release.branches]
+main = { match = "main", prelease = false}
+dev = { match = ".+", prelease = true, prelease_token="rc"}
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.rst"
+exclude_commit_patterns = [
+  '''chore(?:\([^)]*?\))?: .+''',
+  '''ci(?:\([^)]*?\))?: .+''',
+  '''refactor(?:\([^)]*?\))?: .+''',
+  '''style(?:\([^)]*?\))?: .+''',
+  '''test(?:\([^)]*?\))?: .+''',
+  '''build\((?!deps\): .+)''',
+  '''Merged? .*''',
+  '''Initial Commit.*''',
+  '''^\d+\.\d+\.\d+''',
+]
+insertion_flag = "=========\nCHANGELOG\n========="
+mode = "update"
+template_dir = "config/release-templates"

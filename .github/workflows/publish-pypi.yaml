@@ -1,0 +1,83 @@
+name: Publish - PyPI On Release
+
+on:
+  # Workflow run used here otherwise semantic release needs to be configured
+  # to commit using an API token and not GITHUB_TOKEN.
+  workflow_run:
+    workflows: ["Release Main - Semantic Release"]
+    types:
+      - completed
+      
+
+jobs:
+  pypi-publish:
+      runs-on: ubuntu-latest
+      environment:
+        name: pypi
+        url: https://pypi.org/project/${{ github.event.repository.name }}
+      permissions:
+        id-token: write
+        contents: read
+      steps:
+        - name: Download source
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0  # Required to get full history for tag resolution
+        - name: Find the release tag for semantic workflow commit
+          id: get-tag
+          run: |
+            COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "Searching tag for commit $COMMIT_SHA"
+            TAG=$(git tag --contains "$COMMIT_SHA" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+            if [ -z "$TAG" ]; then
+              echo "No semver tag found for commit."
+              exit 1
+            fi
+            echo "Found tag: $TAG"
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+        # Only publish releases originating from main branch
+        - name: Ensure tag is from main
+          run: |
+            git fetch origin main
+            TAG_COMMIT=$(git rev-list -n 1 ${{ steps.get-tag.outputs.tag }})
+            MAIN_COMMIT=$(git rev-parse origin/main)
+            BASE=$(git merge-base "$TAG_COMMIT" "$MAIN_COMMIT")
+
+            if [ "$BASE" != "$TAG_COMMIT" ] && [ "$BASE" != "$MAIN_COMMIT" ]; then
+              echo "Tag is NOT based on main. Aborting."
+              exit 1
+            fi
+        
+        - name: Check out the release tag
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+            ref: ${{ steps.get-tag.outputs.tag }}
+
+        - name: Set up python
+          id: setup-python
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.12'
+
+        - name: Install Poetry
+          uses: snok/install-poetry@v1
+          with:
+            version: 2.1.3
+            virtualenvs-create: true
+            virtualenvs-in-project: true
+            virtualenvs-path: .venv
+
+        - name: Install project dependencies
+          run: poetry install --no-interaction --no-root
+
+        - name: Build packge
+          run: poetry build
+
+        - name: Publish package | PyPI
+          run: |
+            echo "This should be good to publish."
+        ## Do not UNCOMMENT until pipeline is fully vetted.
+        ## - name: Publish package
+        ##   uses: pypa/gh-action-pypi-publish@release/v1

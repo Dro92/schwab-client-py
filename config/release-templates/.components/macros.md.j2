@@ -1,0 +1,74 @@
+{% from 'macros.common.j2' import capitalize_first_letter_only %}
+
+
+{#
+  MACRO: format a inline link reference in Markdown
+#}{%  macro format_link(link, label)
+%}{{    "[%s](%s)" | format(label, link)
+}}{%  endmacro
+%}
+
+
+{#
+  MACRO: commit message links or PR/MR links of commit
+#}{%  macro commit_msg_links(commit)
+%}{%    if commit.error is undefined
+%}{#
+   #      # Initialize variables
+#}{%      set link_references = []
+%}{%      set summary_line = capitalize_first_letter_only(
+            commit.descriptions[0] | safe
+          )
+%}{#
+#}{%      if commit.linked_merge_request != ""
+%}{#        # Add PR references with a link to the PR
+#}{%        set _ = link_references.append(
+              format_link(
+                commit.linked_merge_request | pull_request_url,
+                "PR" ~ commit.linked_merge_request
+              )
+            )
+%}{%      endif
+%}{#
+   #      # DEFAULT: Always include the commit hash as a link
+#}{%      set _ = link_references.append(
+            format_link(
+              commit.hexsha | commit_hash_url,
+              "`%s`" | format(commit.short_hash)
+            )
+          )
+%}{#
+#}{%      set formatted_links = ""
+%}{%      if link_references | length > 0
+%}{%        set formatted_links = " (%s)" | format(link_references | join(", "))
+%}{%      endif
+%}{#
+          # Return the modified summary_line
+#}{{      summary_line ~ formatted_links
+}}{%    endif
+%}{%  endmacro
+%}
+
+
+{#
+  MACRO: format commit summary line
+#}{%  macro format_commit_summary_line(commit)
+%}{#    # Check for Parsing Error
+#}{%    if commit.error is undefined
+%}{#
+   #      # Add any message links to the commit summary line
+#}{%      set summary_line = commit_msg_links(commit)
+%}{#
+#}{%      if commit.scope
+%}{%        set summary_line = "**%s**: %s" | format(commit.scope, summary_line)
+%}{%      endif
+%}{#
+   #      # Return the modified summary_line
+#}{{      summary_line
+}}{#
+#}{%    else
+%}{#      # Return the first line of the commit if there was a Parsing Error
+#}{{      (commit.commit.message | string).split("\n", maxsplit=1)[0]
+}}{%    endif
+%}{%  endmacro
+%}

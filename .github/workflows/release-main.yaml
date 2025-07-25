@@ -1,0 +1,46 @@
+name: Release Main - Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  semantic-release:
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+        
+      steps:
+        - name: Check out repository
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ github.ref_name }}
+            fetch-depth: 0  # Fetch history so semantic-release can find prior tag
+
+        - name: Setup | Force release branch to be at workflow sha
+          run: |
+            git reset --hard ${{ github.sha }}
+
+        - name: Set up python
+          id: setup-python
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.12'
+
+        - name: Install Poetry
+          uses: snok/install-poetry@v1
+          with:
+            version: 2.1.3
+            virtualenvs-create: false
+        # Use native package over PSR container
+        - name: Install release dependencies
+          run: pip install python-semantic-release
+
+        - name: Publish | Semantic release
+          run: |
+            git config --global user.name "github-actions"
+            git config --global user.email "actions@users.noreply.github.com"
+            semantic-release -v version
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

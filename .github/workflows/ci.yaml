@@ -1,0 +1,24 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    types: [synchronize, reopened, ready_for_review]
+    branches: # Target branches
+      - main
+      - rc
+
+  # Allow manual runs from any branch
+  workflow_dispatch:
+
+# If a new push is made, cancel prior run
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate.yaml
+    permissions:
+      contents: read
+    with:
+      github-ref: ${{ github.head_ref }}  # PR branch name
