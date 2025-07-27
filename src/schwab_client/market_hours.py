@@ -56,7 +56,7 @@ class MarketHours:
         """
         params = {}
         if date is not None:
-            params["data"] = date
+            params["date"] = date
         # Check provided market id is valid
         market_id = check_enum_value(market_id, Markets.MarketType)
 

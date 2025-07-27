@@ -1,9 +1,20 @@
 """Module provides helper functions."""
 
 from enum import Enum
-from typing import Type, TypeVar
+from typing import Type, TypedDict,TypeVar
 
 E = TypeVar("E", bound=Enum)  # Provides mypy proper Enum member typing
+
+class OAuth2Token(TypedDict, total=False):
+    """OAuth2 token template."""
+
+    access_token: str
+    refresh_token: str
+    expires_in: int
+    id_token: str
+    expires_at: float
+    token_type: str
+    scope: str
 
 
 def check_enum_value(field: str, enum_cls: Type[E]) -> str:

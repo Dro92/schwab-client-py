@@ -5,10 +5,13 @@ import time
 from enum import Enum
 from contextlib import AbstractAsyncContextManager
 import base64
+from abc import ABC, abstractmethod
 
 import httpx
 
-from typing import Any, TypedDict, Optional, Awaitable, Protocol, Callable
+from typing import Optional, Awaitable, Callable
+
+from schwab_client.utils import OAuth2Token
 
 # Schwab OAuth2 Overview
 # https://developer.schwab.com/products/trader-api--individual/details/documentation/Retail%20Trader%20API%20Production
@@ -39,37 +42,29 @@ class Token(str, Enum):
     REFRESH_TOKEN = "refresh_token"
     ACCESS_TOKEN = "access_token"
 
-class OAuth2Token(TypedDict, total=False):
-    """OAuth2 token template."""
-
-    access_token: str
-    refresh_token: str
-    expires_in: int
-    id_token: str
-    expires_at: float
-    token_type: str
-    scope: str
-
-class TokenStorageProtocol(Protocol):
+class TokenStorageProtocol(ABC):
     """Token storage protocl for the user to implement."""
 
-    async def read_token(self) -> Optional[dict]:
+    @abstractmethod
+    async def read_token(self, client: Callable[..., Awaitable[None]]) -> Optional[OAuth2Token]:
         """Read a token from somewhere."""
-        ...
+        raise NotImplementedError
 
-    async def write_token(self, data: dict) -> None: 
+    @abstractmethod
+    async def write_token(self, client: Callable[..., Awaitable[None]], data: OAuth2Token) -> None: 
         """Write a token somewhere."""
-        ...
+        raise NotImplementedError
 
-class LockProtocol(Protocol):
+class LockProtocol(ABC):
     """Lock protocol for the user to implement."""
 
-    def __call__(self) -> AbstractAsyncContextManager[bool]:
+    @abstractmethod
+    def __call__(self, client: Callable[..., Awaitable[None]], timeout: int) -> AbstractAsyncContextManager[bool]:
         """Type hint call to Lock."""
-        ...
+        raise NotImplementedError
 
 
-class SchwabAuth:
+class SchwabAuthTokenManager(ABC):
     """Schwab OAuth2 access token refresher.
 
     This class only refreshes access tokens utilizing a valid refresh token.
@@ -81,19 +76,16 @@ class SchwabAuth:
         client_secret: str,
         refresh_url: str,
         db_client: Callable[..., Awaitable[None]],
-        db_read_token: Callable[[], Awaitable[Optional[OAuth2Token]]],
-        db_write_token: Callable[[OAuth2Token], Awaitable[None]],
-        db_lock: Callable[[], AbstractAsyncContextManager[bool]]
+        db_lock: LockProtocol,
+        token_storage: TokenStorageProtocol,
     ):
         """Initialize Schwab authentication manager."""
         self.client_id = client_id
         self.client_secret = client_secret
         self.refresh_url = refresh_url
-        self._refresh_lock = asyncio.Lock()  # Coroutine lock safety
-        self.lock = db_lock
-        self.read_token = db_read_token
-        self.write_token = db_write_token
         self.db_client = db_client
+        self.token_storage = token_storage
+        self.lock = db_lock
 
     async def is_token_expired(self, buffer: int = 0) -> bool:
         """Check if token has expired.
@@ -105,7 +97,7 @@ class SchwabAuth:
             bool
 
         """
-        token = await self.read_token(self.db_client)
+        token = await self.token_storage.read_token(self.db_client)
 
         if not token:
             return True
@@ -152,7 +144,7 @@ class SchwabAuth:
             dict: OAuth2Token dictionary
 
         """
-        token_data = await self.read_token(self.db_client)
+        token_data = await self.token_storage.read_token(self.db_client)
 
         if not await self.is_token_expired(60):
             # TODO: Need to add error handling here.
@@ -162,24 +154,20 @@ class SchwabAuth:
         # Get lock before updating token
         async with self.lock(self.db_client) as acquired:
             if acquired:
-                token_data = await self.read_token(self.db_client)  # Re-sync latest
+                token_data = await self.token_storage.read_token(self.db_client)  # Re-sync latest
 
                 # Refresh access token
                 refreshed_token = await self._refresh_token(token_data[Token.REFRESH_TOKEN])
                 self._token = token_data  # Update internal token state
-                await self.write_token(self.db_client, refreshed_token)  # Write updated token to database
+                await self.token_storage.write_token(self.db_client, refreshed_token)  # Write updated token to database
                 return refreshed_token
 
             # Assume another client is updating the token
             for _ in range(lock_attempts):
                 await asyncio.sleep(1)  # Wait a second before re-checking
-                token_data = await self.read_token(self.db_client)
+                token_data = await self.token_storage.read_token(self.db_client)
                 if not await self.is_token_expired():  # Check if new token is valid
                     self._token = token_data  # Update internal token state
                     return token_data
                     
             raise RuntimeError("Failed to get a valid token.")
-        
-
-    # TODO: Need to have a check for the refresh token to notify user
-    # Must include a timestamp or some sort of check for the refresh token.
