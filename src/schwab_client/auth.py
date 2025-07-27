@@ -11,6 +11,7 @@ import httpx
 
 from typing import Optional, Awaitable, Callable
 
+from schwab_client.config import settings
 from schwab_client.utils import OAuth2Token
 
 # Schwab OAuth2 Overview
@@ -72,12 +73,12 @@ class SchwabAuthTokenManager(ABC):
 
     def __init__(
         self,
-        client_id: str,
-        client_secret: str,
-        refresh_url: str,
         db_client: Callable[..., Awaitable[None]],
         db_lock: LockProtocol,
         token_storage: TokenStorageProtocol,
+        client_id: str = settings.schwab_client_id,
+        client_secret: str = settings.schwab_client_secret.get_sensitive_value(),
+        refresh_url: str =  settings.schwab_token_url,
     ):
         """Initialize Schwab authentication manager."""
         self.client_id = client_id

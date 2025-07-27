@@ -37,7 +37,7 @@ class SchwabClient(ClientProtocol):
         params: Optional[Dict[str, Any]] = None,
     ) -> Response:
         """Polymorphic request class for HTTP methods."""
-        url = settings.SCHWAB_API_BASE_URL + path
+        url = settings.schwab_api_base_url + path
         # TODO: Add some logging to debug? Need to protect sensitive data
 
         # Check token and refresh if necessary
@@ -51,11 +51,10 @@ class SchwabClient(ClientProtocol):
         }
 
         try:
-            # resp: Response = await request_method(url, params=params)
             resp = await self._client.request(method, url, params=params, headers=headers)
             resp.raise_for_status()
             return resp.json()
-        except Exception:  # TODO: Improve exception handling for specific tokens
+        except Exception:  # TODO: Improve exception handling for specific auth errors
             # Handle different types of errors based on OAuth2.
             # Would it just be easier here to implement authlib which has them?
             self.token = await self.auth.get_token()  # Bad token, refresh it
