@@ -18,18 +18,19 @@ class OAuth2Token(TypedDict, total=False):
     token_type: str
     scope: str
 
+
 def normalize_ticker(ticker: str) -> str:
     """Normalize a ticker and validate its format.
 
     Args:
         ticker (str): Company publicly listed ticker symbol.
-    
+
     Returns:
         str: Noramlized ticker in all caps.
 
     Raises:
         ValueError: If ticker contains invalid characters.
-    
+
     """
     normalized = ticker.upper()
     # if not normalized.isalnum():
@@ -40,6 +41,7 @@ def normalize_ticker(ticker: str) -> str:
             "Only alphanumeric, dot, slash, space, $, - or _ are allowed."
         )
     return normalized
+
 
 def check_enum_value(field: Union[str, Enum], enum_cls: Type[Enum]) -> str:
     """Return the enum value based on string or Enum member.
@@ -68,9 +70,10 @@ def check_enum_value(field: Union[str, Enum], enum_cls: Type[Enum]) -> str:
         f"'{field}' is neither a string nor a member of {enum_cls.__name__}."
     )
 
+
 def validate_enums_iterable(
-    iterable: Optional[Iterable[Union[str, Enum]]],
-    enum_cls: Type[Enum]
+    enum_cls: Type[Enum],
+    iterable: Optional[Iterable[Union[str, Enum]]] = None,
 ) -> list[str]:
     """Validate that provided values are part of an enum class.
 
@@ -83,7 +86,7 @@ def validate_enums_iterable(
 
     Raises:
         ValueError: If any element is not a valid enum value/member.
-        
+
     """
     if iterable is None:
         return []
