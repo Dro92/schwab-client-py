@@ -51,15 +51,19 @@ class SchwabClient(ClientProtocol):
         }
 
         try:
-            resp = await self._client.request(method, url, params=params, headers=headers)
+            resp = await self._client.request(
+                method, url, params=params, headers=headers
+            )
             resp.raise_for_status()
             return resp.json()
         except Exception:  # TODO: Improve exception handling for specific auth errors
             # Handle different types of errors based on OAuth2.
             # Would it just be easier here to implement authlib which has them?
             self.token = await self.auth.get_token()  # Bad token, refresh it
-        
+
             # Retry request with updated token
-            resp = await self._client.request(method, url, params=params, headers=headers)
+            resp = await self._client.request(
+                method, url, params=params, headers=headers
+            )
             resp.raise_for_status()
             return resp.json()

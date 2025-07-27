@@ -115,7 +115,7 @@ class SchwabAuthTokenManager(ABC):
 
         if not isinstance(expires_at, (int, float)):  # Verify not malformed
             return True
-        
+
         return not expires_at or time.time() >= (expires_at - buffer)
 
     async def _refresh_token(self, refresh_token: str) -> OAuth2Token:
@@ -151,11 +151,9 @@ class SchwabAuthTokenManager(ABC):
             )
             response.raise_for_status()
             return response.json()  # type: ignore[return-value]
-        
+
     async def _retry_get_valid_token(
-        self,
-        attempts: int = 3,
-        delay: float = 1.0
+        self, attempts: int = 3, delay: float = 1.0
     ) -> OAuth2Token:
         """Retry getting a valid token from database.
 
@@ -173,12 +171,13 @@ class SchwabAuthTokenManager(ABC):
             if not token_data:
                 continue
 
-            if token_data and not await self.is_token_expired():  # Check if new token is valid
+            if (
+                token_data and not await self.is_token_expired()
+            ):  # Check if new token is valid
                 self._token = token_data  # Update internal token state
                 return token_data
-        
-        raise RuntimeError("Failed to get a valid token.")
 
+        raise RuntimeError("Failed to get a valid token.")
 
     async def get_token(self, buffer: int = 60, lock_attempts: int = 3) -> OAuth2Token:
         """Get a valid token.
@@ -194,7 +193,7 @@ class SchwabAuthTokenManager(ABC):
 
         if not token_data:
             raise ValueError("Token not found.")
-        
+
         if token_data and not await self.is_token_expired(buffer):
             # TODO: Need to add error handling here.
             self._token = token_data  # Update internal token state
@@ -214,4 +213,3 @@ class SchwabAuthTokenManager(ABC):
 
             # Another client may be updating the token, retry to get new token
             return await self._retry_get_valid_token(lock_attempts)
-
