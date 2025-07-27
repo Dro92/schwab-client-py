@@ -1,6 +1,8 @@
 """Module for interacting with the Schwab Options endpoint."""
 
 from enum import Enum
+from typing import Union
+from urllib.parse import quote
 
 from httpx import Response
 
@@ -31,61 +33,48 @@ class Quotes:
         """Quotes init method."""
         self.client = client
         pass
-
-    async def get_quote(self, ticker: str, fields: list[str | Enum] = None) -> Response:
-        """Single symbol get quote.
-
-        Args:
-            ticker (str)): Publicly listed ticker symbol. Ex. AAPL
-            fields (list(str | Enum)): Request subsets of data. By default, none will return all.
-        
-        Returns:
-            HTTP Response 
-
-        Examples:
-            >>> quotes.get_quote("AAPL")
-            <Response [200]>
-            
-        """
-        params = {}
-        ticker = normalize_ticker(ticker)
    
-        fields = validate_enums_iterable(fields, QuoteFields)
-        if fields:
-            params["fields"] = ",".join(fields)
-
-        path = MARKET_DATA_PATH + "/{}/quotes".format(ticker)
-        return await self.client._get(path, params)
-    
     async def get_quotes(
-        self, tickers: list[str], fields: list[str | Enum] = None
+        self, tickers: Union[str, list[str]], fields: list[str | Enum] = None
     ) -> Response:
-        """Get quote for a list of symbols.
+        """Get quote for the provided ticker symbols of symbols.
 
         Args:
-            tickers (list(str)): Comma separated string of symbol(s) to look up ticker symbol.
+            tickers (str or list[str]: Single or list of ticker symbols.
             fields (list(str | Enum)): Request subsets of data. By default, none will return all.
 
         Returns:
             HTTP Response
 
+        Raises:
+            TypeError: If tickers is neither str nor list of str.
+
         Examples:
+            >>> quotes.get_quotes("BRK/B")
+            <Response [200]>
             >>> quotes.get_quotes(["AAPL", "GOOG"])
             <Response [200]>
 
         """
         params = {}
 
-        # Normalize list of tickers to proper format
-        tickers = [normalize_ticker(t) for t in tickers]
-
+        # Check fields first
         fields = validate_enums_iterable(fields, QuoteFields)
         if fields:
             params["fields"] = ",".join(fields)
 
-        # TODO: Should catch an error if list entries are not strings?
-        if isinstance(tickers, list):
+        # Check whether single ticker was given and use proper endpoint
+        if isinstance(tickers, str):
+            ticker = normalize_ticker(tickers)
+            # Encode ticker so / is not reated as a subpath
+            ticker_encoded = quote(ticker, safe="")
+            path = MARKET_DATA_PATH + "/{}/quotes".format(ticker_encoded)
+        # Check whether list of tickers was given and use proper endpoint
+        elif isinstance(tickers, list):
+            tickers = [normalize_ticker(t) for t in tickers]
             params["symbols"] = tickers
-
-        path = MARKET_DATA_PATH + "/quotes"
+            path = MARKET_DATA_PATH + "/quotes"
+        else:
+            raise TypeError(f"{tickers} must be either str or list of str.")
+            
         return await self.client._get(path, params)
