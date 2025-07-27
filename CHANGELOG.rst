@@ -7,6 +7,20 @@ CHANGELOG
 ..
     version list
 
+.. _changelog-v0.2.0:
+
+v0.2.0 (2025-07-27)
+===================
+
+Features
+--------
+
+* **quotes**: Add initial quotes endpoint api with get quotes support (`#12`_, `372cdb1`_)
+
+.. _#12: https://github.com/Dro92/schwab-client-py/pull/12
+.. _372cdb1: https://github.com/Dro92/schwab-client-py/commit/372cdb173ff7cfc7a39e35b982f10a77d0318946
+
+
 .. _changelog-v0.1.0:
 
 v0.1.0 (2025-07-27)
