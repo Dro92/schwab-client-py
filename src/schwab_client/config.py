@@ -81,6 +81,7 @@ class Settings:
     schwab_client_secret: Sensitive
     schwab_api_base_url: str
     schwab_token_url: str
+    schwab_market_data_path: str
 
 
 def load_settings() -> Settings:
@@ -108,6 +109,7 @@ def load_settings() -> Settings:
         schwab_token_url=os.getenv(
             "SCHWAB_TOKEN_URL", "https://api.schwabapi.com/v1/oauth/token"
         ),
+        schwab_market_data_path=os.getenv("SCHWAB_MARKET_DATA_PATH", "/marketdata/v1"),
     )
 
 
