@@ -3,10 +3,13 @@ name: Publish - PyPI On Release
 on:
   # Workflow run used here otherwise semantic release needs to be configured
   # to commit using an API token and not GITHUB_TOKEN.
-  workflow_run:
-    workflows: ["Release Main - Semantic Release"]
-    types:
-      - completed
+  # workflow_run:
+  #   workflows: ["Release Main - Semantic Release"]
+  #   types:
+  #     - completed
+
+  workflow_dispatch: # Run manually for now until project is ready
+    
       
 
 jobs:

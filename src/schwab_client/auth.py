@@ -3,11 +3,16 @@
 import asyncio
 import time
 from enum import Enum
+from contextlib import AbstractAsyncContextManager
+import base64
+from abc import ABC, abstractmethod
 
-from authlib.integrations.httpx_client import AsyncOAuth2Client  # type: ignore
+import httpx
 
+from typing import Optional, Awaitable, Callable
 
-from typing import Any, Dict
+from schwab_client.config import settings
+from schwab_client.utils import OAuth2Token
 
 # Schwab OAuth2 Overview
 # https://developer.schwab.com/products/trader-api--individual/details/documentation/Retail%20Trader%20API%20Production
@@ -39,7 +44,36 @@ class Token(str, Enum):
     ACCESS_TOKEN = "access_token"
 
 
-class SchwabAuth:
+class TokenStorageProtocol(ABC):
+    """Token storage protocl for the user to implement."""
+
+    @abstractmethod
+    async def read_token(
+        self, client: Callable[..., Awaitable[None]]
+    ) -> Optional[OAuth2Token]:
+        """Read a token from somewhere."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def write_token(
+        self, client: Callable[..., Awaitable[None]], data: OAuth2Token
+    ) -> None:
+        """Write a token somewhere."""
+        raise NotImplementedError
+
+
+class LockProtocol(ABC):
+    """Lock protocol for the user to implement."""
+
+    @abstractmethod
+    def __call__(
+        self, client: Callable[..., Awaitable[None]], timeout: int = 3
+    ) -> AbstractAsyncContextManager[bool]:
+        """Type hint call to Lock."""
+        raise NotImplementedError
+
+
+class SchwabAuthTokenManager(ABC):
     """Schwab OAuth2 access token refresher.
 
     This class only refreshes access tokens utilizing a valid refresh token.
@@ -47,22 +81,22 @@ class SchwabAuth:
 
     def __init__(
         self,
-        client_id: str,
-        client_secret: str,
-        token: Dict[str, Any],
-        refresh_url: str,
+        db_client: Callable[..., Awaitable[None]],
+        db_lock: LockProtocol,
+        token_storage: TokenStorageProtocol,
+        client_id: str = settings.schwab_client_id,
+        client_secret: str = settings.schwab_client_secret.get_sensitive_value(),
+        refresh_url: str = settings.schwab_token_url,
     ):
         """Initialize Schwab authentication manager."""
-        self._client = AsyncOAuth2Client(
-            client_id=client_id, client_secret=client_secret, token=token
-        )
         self.client_id = client_id
         self.client_secret = client_secret
-        self.token = token
         self.refresh_url = refresh_url
-        self._refresh_lock = asyncio.Lock()  # Coroutine lock safety
+        self.db_client = db_client
+        self.token_storage = token_storage
+        self.lock = db_lock
 
-    def is_token_expired(self, buffer: int = 0) -> bool:
+    async def is_token_expired(self, buffer: int = 0) -> bool:
         """Check if token has expired.
 
         Args:
@@ -72,27 +106,110 @@ class SchwabAuth:
             bool
 
         """
-        if not self.token:
+        token = await self.token_storage.read_token(self.db_client)
+
+        if not token:
             return True
 
-        expires_at = self.token.get(Token.EXPIRES_AT)
+        expires_at = token.get(Token.EXPIRES_AT)
+
+        if not isinstance(expires_at, (int, float)):  # Verify not malformed
+            return True
+
         return not expires_at or time.time() >= (expires_at - buffer)
 
-    async def get_token(self, buffer: int = 60) -> dict:
-        """Get a valid token from Schwab.
+    async def _refresh_token(self, refresh_token: str) -> OAuth2Token:
+        """Refresh the access token using a valid refresh token.
+
+        Args:
+            refresh_token (str): Valid refresh token for Schwab
+
+        Returns:
+            dict: OAuth2Token formatted dict
+
+        """
+        # Build payload request type
+        payload = {
+            "grant_type": Token.REFRESH_TOKEN.value,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "refresh_token": refresh_token,
+        }
+        # Base64 encode the basic auth
+        auth_str = f"{self.client_id}:{self.client_secret}"
+        auth_bytes = auth_str.encode("utf-8")
+        auth_b64 = base64.b64encode(auth_bytes).decode("utf-8")
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "Authorization": f"Basic {auth_b64}",
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.refresh_url, data=payload, headers=headers
+            )
+            response.raise_for_status()
+            return response.json()  # type: ignore[return-value]
+
+    async def _retry_get_valid_token(
+        self, attempts: int = 3, delay: float = 1.0
+    ) -> OAuth2Token:
+        """Retry getting a valid token from database.
 
         Returns:
             dict: OAuth2Token dictionary
 
-        """
-        if self.is_token_expired(buffer):
-            # Use lock for single cororutine access
-            async with self._refresh_lock:
-                # Update latest token
-                self.token = await self._client.refresh_token(
-                    self.refresh_url, self.token.get(Token.REFRESH_TOKEN)
-                )
-        return self.token
+        Raises:
+            RuntimeError: If failed to obtain a valid token.
 
-    # TODO: Need to have a check for the refresh token to notify user
-    # Must include a timestamp or some sort of check for the refresh token.
+        """
+        for _ in range(attempts):
+            await asyncio.sleep(delay)  # Wait before re-checking
+            token_data = await self.token_storage.read_token(self.db_client)
+
+            if not token_data:
+                continue
+
+            if (
+                token_data and not await self.is_token_expired()
+            ):  # Check if new token is valid
+                self._token = token_data  # Update internal token state
+                return token_data
+
+        raise RuntimeError("Failed to get a valid token.")
+
+    async def get_token(self, buffer: int = 60, lock_attempts: int = 3) -> OAuth2Token:
+        """Get a valid token.
+
+        Returns:
+            dict: OAuth2Token dictionary
+
+        Raises:
+            ValueError: If no token is found in the database.
+
+        """
+        token_data = await self.token_storage.read_token(self.db_client)
+
+        if not token_data:
+            raise ValueError("Token not found.")
+
+        if token_data and not await self.is_token_expired(buffer):
+            # TODO: Need to add error handling here.
+            self._token = token_data  # Update internal token state
+            return token_data
+
+        # Get lock before updating token
+        async with self.lock(self.db_client) as acquired:
+            if acquired:
+                refreshed_token = await self._refresh_token(
+                    token_data[Token.REFRESH_TOKEN.value]
+                )
+                self._token = token_data  # Update internal token state
+                await self.token_storage.write_token(
+                    self.db_client, refreshed_token
+                )  # Write updated token to database
+                return refreshed_token
+
+            # Another client may be updating the token, retry to get new token
+            return await self._retry_get_valid_token(lock_attempts)
