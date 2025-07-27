@@ -212,6 +212,6 @@ class SchwabAuthTokenManager(ABC):
                 )  # Write updated token to database
                 return refreshed_token
 
-            # Another client may be updating the token, retry
+            # Another client may be updating the token, retry to get new token
             return await self._retry_get_valid_token(lock_attempts)
 
