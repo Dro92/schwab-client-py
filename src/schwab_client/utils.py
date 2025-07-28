@@ -75,7 +75,7 @@ def validate_enums_iterable(
     enum_cls: Type[Enum],
     iterable: Optional[Iterable[Union[str, Enum]]] = None,
 ) -> list[str]:
-    """Validate that provided values are part of an enum class.
+    """Validate provided values are part of an enum class.
 
     Args:
         iterable: List of strings or Enum members.
@@ -92,3 +92,30 @@ def validate_enums_iterable(
         return []
 
     return [check_enum_value(val, enum_cls) for val in iterable]
+
+
+def resolve_enum(
+    value: Optional[str | Enum], enum_cls: type[Enum], default: Enum
+) -> str:
+    """Help check and resolve enumerated fields.
+
+    Args:
+        value: String or Enum value to check.
+        enum_cls: The Enum class to validate against.
+        default: The default Enum member to utillize if value is None.
+
+    Returns:
+        str: Valid member from enum.
+
+    Raises:
+        ValueError: If any element is not a valid enum value/member.
+
+    """
+    if value is None:
+        return default.value
+    if isinstance(value, enum_cls):
+        return value.value
+    try:
+        return enum_cls(value).value  # allows raw strings like "CALL"
+    except ValueError:
+        raise ValueError(f"{value!r} is not a valid {enum_cls.__name__}")
