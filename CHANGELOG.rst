@@ -7,6 +7,32 @@ CHANGELOG
 ..
     version list
 
+.. _changelog-v0.3.0:
+
+v0.3.0 (2025-07-28)
+===================
+
+Documentation
+-------------
+
+* Cleaning up config release template and removing python smever changelog for templating. (`#13`_,
+  `2094e00`_)
+
+* Excluding config/release-templates from languages scanning in repository. (`#13`_, `2094e00`_)
+
+* Updating read me with some basic infromation. (`#13`_, `2094e00`_)
+
+Features
+--------
+
+* **options**: Add options endpoint for getting chains (`#13`_, `2094e00`_)
+
+* **options**: Added options endpoint for getting /chains API. (`#13`_, `2094e00`_)
+
+.. _#13: https://github.com/Dro92/schwab-client-py/pull/13
+.. _2094e00: https://github.com/Dro92/schwab-client-py/commit/2094e001cb04ae4a0e222899f554f9a2759daeee
+
+
 .. _changelog-v0.2.0:
 
 v0.2.0 (2025-07-27)
